@@ -82,11 +82,11 @@ class Compiler:
 
             self._downloadTo(mod, os.path.join('.temp', mod.get('file')))
 
-            # with zipfile.ZipFile(tempZip) as z:
-            #     z.extractall(base)
+            with zipfile.ZipFile(tempZip) as z:
+                z.extractall(base)
 
-            # distutils.dir_util.copy_tree(base, os.path.join(self.path, mod.get('extractto').replace('root', '')))
-            # shutil.rmtree(os.path.join(self.path, '.temp'))
+            distutils.dir_util.copy_tree(base, os.path.join(self.path, mod.get('extractto').replace('root', '')))
+            shutil.rmtree(os.path.join(self.path, '.temp'))
 
 
     def getRecipe(self):

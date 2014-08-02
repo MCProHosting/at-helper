@@ -33,12 +33,13 @@ class Download():
         """
         if attempt > 3:
             print('Could not download ' + url)
+            return
 
         # CreeperRepo sometimes replaces one space with two spaces. *shrugs*
         if attempt % 2 != 0:
             url = url.replace(' ', '  ')
 
-        response = requests.get(url, stream=True)
+        response = requests.get(url, stream=True, allow_redirects=True)
         md5sum = hashlib.md5()
         with open(destination, 'wb') as f:
             for chunk in response.iter_content(chunk_size=1024):
