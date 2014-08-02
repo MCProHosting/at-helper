@@ -5,23 +5,21 @@ class Modpack:
 
     slug = None
     version_data = None
-    urls = {
-        'atlauncher': 'https://api.atlauncher.com/v1/',
-        'creeperrepo': 'http://www.creeperrepo.net/ATL/packs/'
-    }
+
+    api = 'https://api.atlauncher.com/v1/'
 
     def __init__(self, slug):
         self.slug = slug
 
     def _getData(self):
         if not self.version_data:
-            response = requests.get(self.urls['atlauncher'] + 'pack/' + self.slug + '/')
+            response = requests.get(self.api + 'pack/' + self.slug + '/')
 
             if response.status_code != 200 or response.json()['error']:
-                return False
+                raise Exception('Bad response code ' + response.status_code + ' from ATLauncher API')
 
             self.version_data = response.json()['data']
-            self.version_data['versions'] = map(lambda v: Version(v), self.version_data['versions'])
+            self.version_data['versions'] = map(lambda v: Version(self.slug, v), self.version_data['versions'])
 
         return self.version_data
 
