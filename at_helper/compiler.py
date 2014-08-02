@@ -18,6 +18,20 @@ class Compiler:
 
 
     def _downloadTo(self, url, destination, md5sum_verify = None, attempt = 0):
+        """
+        Attempts to download the URL into the modpack. Does check integrity.
+
+        Args:
+            url: URL relative to CreeperRepo from which to download the pack.
+            destination: String of the file path relative to the target
+                folder base, into which the file should be downloaded.
+            md5sum_verify: String of the md5sum to check the file against.
+            attempt: If integrity check fails, we'll try multiple times and
+                increment "attempt" each time.
+        """
+
+        if attempt > 5:
+            print('Could not download ' + url)
 
         target = os.path.join(self.path, destination)
         try:
@@ -30,7 +44,6 @@ class Compiler:
         if attempt % 2 != 0:
             final_url = final_url.replace(' ', '  ')
 
-        print 'Now downloading ' + final_url
         response = requests.get(final_url, stream=True)
         md5sum = hashlib.md5()
         with open(target, 'wb') as f:
@@ -41,12 +54,20 @@ class Compiler:
                     f.flush()
 
         if md5sum.hexdigest() != md5sum_verify:
-            print 'Corrupt download, retrying...'
+            print('Corrupt download, retrying...')
             self._downloadTo(url, destination, md5sum_verify, attempt + 1)
     
-    def _compileLibraries(self, recipe, library):
+    def _compileLibraries(self, library):
+        """
+        Places the library in the target folder.
+
+        Args:
+            library: The LXML element representing the current library.
+        Returns:
+            void
+        """
         if library.get('download') != 'server':
-            print 'Skipping download of %s because download type is %s' % (library.get('file'), library.get('download'))
+            print('Skipping download of %s because download type is %s' % (library.get('file'), library.get('download')))
             return
 
         if not library.get('server'):
@@ -55,20 +76,29 @@ class Compiler:
         self._downloadTo(library.get('url'), os.path.join('libraries', library.get('server')), library.get('md5'))
 
 
-    def _compileMods(self, recipe, mod):
+    def _compileMods(self, mod):
+        """
+        Places the mod appropriately in the target folder.
+
+        Args:
+            mod: The LXML element representing the current mod.
+        Returns:
+            void
+        """
+
         if mod.get('download') != 'server':
-            print 'Skipping download of %s because download type is %s' % (mod.get('name'), mod.get('download'))
+            print('Skipping download of %s because download type is %s' % (mod.get('name'), mod.get('download')))
             return
 
         if mod.get('optional') == 'yes':
+            if self.mods == 'required':
+                return
+
             if isinstance(self.mods, list) and not mod.get('name') in self.mods:
-                print 'Skipping download of %s because it is not in our list' % mod.get('name')
                 return
 
             if self.mods == 'recommended' and not mod.get('recommended') == 'yes':
-                print 'Skipping download of %s because it is not recommended' % mod.get('name')
                 return
-
 
         type = mod.get('type')
 
@@ -92,28 +122,48 @@ class Compiler:
 
 
     def getRecipe(self):
-        with open('testTree.xml') as f:
-            return lxml.etree.fromstring(f.read())
+        """
+        Gets the XML "recipe" from CreeperRepo in order to compile the modpack.
 
-        response = requests.get('%s/packs/%s/versions/%s/Configs.yml' % (self.version.repo, self.version.pack_name, self.version.pack_version))
-
+        Returns:
+            An LXML element representing the recipe.
+        """
+        response = requests.get('%s/packs/%s/versions/%s/Configs.xml' % (self.version.repo, self.version.pack_name, self.version.pack_version))
+        
         if response.status_code != 200:
-            raise Exception('Bad response code ' + response.status_code + ' from ATLauncher API')
+            raise RuntimeError(response.status_code , 'Bad response code from CreeperRepo API')
 
         return lxml.etree.fromstring(response.content)
 
 
     def compile(self, path, mods = None):
+        """
+        Compiles the modpack.
+
+        Args:
+            path: Path to compile the modpack into.
+            mods: This can be a list or string. It may be a list of mod names to
+                install, though this is not normally recommended. Or, it can be
+                "required" or "recommended", to install the required mods or
+                "recommended" mods for the pack. If None, every mod will be
+                installed.
+        Returns:
+            void
+        """
         self.path = path
         self.mods = mods
 
         recipe = self.getRecipe()
 
-        shutil.rmtree(self.path)
+        try:
+            shutil.rmtree(self.path)
+        except Exception:
+            pass
+
         for task in ['libraries', 'mods']:
             task_list = recipe.find(task)
 
-            if not task_list: continue
+            if task_list == None: continue
 
             for child in task_list:
-                getattr(self, '_compile' + task.capitalize())(recipe, child)
+                getattr(self, '_compile' + task.capitalize())(child)
