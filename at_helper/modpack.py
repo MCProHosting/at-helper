@@ -1,5 +1,5 @@
 import requests
-from version import Version
+from at_helper.version import Version
 
 class Modpack:
 

@@ -32,7 +32,7 @@ if args.version != None:
         print('Version not found!')
         sys.exit(1)
 
-    target_version.compile(args.compile, args.folder)
+    target_version.compile(['AnimationAPI'], args.folder)
 else:
     for v in versions:
         print(v.pack_version)

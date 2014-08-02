@@ -1,6 +1,6 @@
 import datetime
 import tempfile
-import compiler
+from at_helper.compiler import Compiler
 
 class Version:
 
@@ -10,8 +10,6 @@ class Version:
     minecraft_version = None
 
     path = None
-
-    repo = 'http://www.creeperrepo.net/ATL'
 
     def __init__(self, name, data):
         """
@@ -53,6 +51,6 @@ class Version:
         if not path:
             path = tempfile.mkdtemp()
 
-        c = compiler.Compiler(self)
+        c = Compiler(self)
 
         return c.compile(path, mods)

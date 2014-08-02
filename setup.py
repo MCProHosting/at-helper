@@ -14,6 +14,6 @@ setup(
     license='MIT',
     packages=find_packages(),
     include_package_data=True,
-    install_requires = ['requests', 'lxml'],
+    install_requires = ['requests', 'lxml', 'beautifulsoup4', 'unshortenit'],
     classifiers=[]
 )
